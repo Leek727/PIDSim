@@ -7,7 +7,8 @@ pygame.init()
 width, height = 1000, 1000
 # Set up the drawing window
 screen = pygame.display.set_mode([width, height])
-
+pygame.font.init()
+font = pygame.font.SysFont(None, 24)
 
 # constants
 dt = .01
@@ -67,32 +68,46 @@ Ki = .005
 Kd = 30
 
 running = True
+pid_active = False
 clock = pygame.time.Clock()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                pid_active = not pid_active
+    
+    if pygame.key.get_pressed()[pygame.K_LEFT]:
+        box.v -= 1
+    elif pygame.key.get_pressed()[pygame.K_RIGHT]:
+        box.v += 1
 
     screen.fill((0,0,0))
 
-    # PID controller
-    error = setpoint - box.x
-    integral += error * dt
+    text = font.render("PID control active" if pid_active else "PID control inactive", True, (255,255,255))
+    screen.blit(text, (0,0)) 
 
-    if previous_error == None:
+    # PID controller
+    if pid_active:
+        error = setpoint - box.x
+        integral += error * dt
+
+        if previous_error == None:
+            previous_error = error
+
+        derivative = (error - previous_error) / dt
+
+        output = Kp * error + Ki * integral + Kd * derivative
         previous_error = error
 
-    derivative = (error - previous_error) / dt
-
-    output = Kp * error + Ki * integral + Kd * derivative
-    previous_error = error
-
-    pprint(round(Kp * error, 2))
-    pprint(round(Ki * integral, 2))
-    pprint(round(Kd * derivative, 2))
-    pprint(round(output, 2))
-    print()
-
+        pprint(round(Kp * error, 2))
+        pprint(round(Ki * integral, 2))
+        pprint(round(Kd * derivative, 2))
+        pprint(round(output, 2))
+        print()
+    else:
+        output = 0
 
     # update loop
     box.update(output)
